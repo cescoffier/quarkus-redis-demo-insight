@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        #map {
+            display: block;
+            margin: auto;
+            height: 500px;
+            width: 500px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <br><br>
+    <h1 class="header center orange-text">Where is the Quarkus Team?</h1>
+    <div class="row center">
+        <h5 class="header col s12 light">A modern approach to find the Quarkus team members</h5>
+    </div>
+    <br><br>
+
+</div>
+
+<div class="container">
+    <div class="section">
+        <div class="row">
+            <div class="col s6">
+                <div id="map" class="center-align">
+                </div>
+            </div>
+            <div class="col s6">
+                <div class="input-field col s12">
+                    <select id="member-list">
+                        <option value="" disabled selected>Select your member</option>
+                    </select>
+                    <label for="member-list">Member:</label>
+                </div>
+
+                <div class="col s12">
+                    <div id="results">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--JavaScript at end of body for optimized loading-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap&v=weekly"
+        defer></script>
+
+<script>
+    let map;
+
+    function initMap() {
+
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: {lat: 48.8566, lng: 2.3522},
+            zoom: 4,
+        });
+
+
+        fetch("/members/positions")
+            .then(res => {
+                return res.json();
+            })
+            .then(data => {
+                const  select = document.getElementById("member-list");
+                data.forEach(member => {
+                    const pos = {lat: member.latitude, lng: member.longitude};
+                    const marker = new google.maps.Marker({
+                        position: pos,
+                        title: member.name,
+                        map: map,
+                        label: {
+                            text: member.name[0]
+                        }
+                    });
+
+                    let opt = document.createElement("option");
+                    opt.setAttribute("value", member.name)
+                    let text = document.createTextNode(member.name);
+                    opt.append(text);
+                    select.append(opt);
+                })
+                const elems = document.querySelectorAll('select');
+                const instances = M.FormSelect.init(elems, {});
+                select.addEventListener('change', (event) => {
+                    console.log(event.target);
+                    if (select !== event.target) return;
+                    console.log("selected: " + event.target.value);
+                    fetch("/members/" + event.target.value)
+                        .then(r => r.json())
+                        .then(data => populateResults(data));
+                }, false);
+            })
+    }
+
+    window.initMap = initMap;
+
+    function populateResults(data) {
+        console.log(data);
+        const  results = document.getElementById("results");
+        clear(results);
+
+        data.forEach(m => {
+            const  p = document.createElement("p");
+            p.innerHTML = "<strong>" + m.name + "</strong> (" + m.distance + " km)";
+            results.append(p);
+        })
+    }
+
+    function clear(element) {
+        element.innerHTML='';
+    }
+
+</script>
+</body>
+</html>
